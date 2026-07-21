@@ -1,0 +1,189 @@
+---
+title: "Opskrifter"
+description: "Færdige integrationer du kan kopiere og tilpasse"
+---
+
+Hver opskrift er komplet og kørende. Kopiér den ind i din egen ressource og ret
+navne og koordinater til.
+
+<Note>
+  Alle eksempler forudsætter `va_policemdt` i din `fxmanifest.lua`:
+
+  ```lua fxmanifest.lua
+  dependencies { 'es_extended', 'va_policemdt' }
+  ```
+</Note>
+
+## Butiksalarm der rejser et opkald
+
+En alarm der udløses, rejser et højprioritets-opkald og rydder op efter sig selv.
+
+```lua server.lua
+AddEventHandler('minealarmer:udloest', function(butik, coords)
+    local call = exports.va_policemdt:CreateCall(
+        'Indbrudsalarm', butik, 'hoej', coords.x, coords.y
+    )
+
+    if call.assigned then
+        print(('%s: patrulje %s rykker ud'):format(butik, call.assigned.plate))
+    else
+        print(('%s: ingen ledig patrulje'):format(butik))
+    end
+
+    -- Alarmen nulstiller sig selv efter fem minutter. Lukker vi ikke opkaldet,
+    -- bliver den tildelte vogn hængende på udrykning indtil det udløber.
+    SetTimeout(5 * 60 * 1000, function()
+        exports.va_policemdt:CloseCall(call.id)
+    end)
+end)
+```
+
+## Fartkamera med automatisk bøde
+
+```lua server.lua
+-- Automatiske systemer får deres egen identifier, så bødetilsynet kan skelne
+-- maskine fra menneske.
+local ATK_IDENTIFIER = 'char1:atk-system'
+
+AddEventHandler('minatk:maalt', function(citizenIdentifier, speed, limit)
+    if speed <= limit then return end
+
+    local res = exports.va_policemdt:IssueFine(ATK_IDENTIFIER, {
+        citizenId = citizenIdentifier,
+        lines = {{
+            paragraf    = '§ 118',
+            description = ('Hastighed %d/%d (ATK)'):format(speed, limit),
+            amount      = math.floor((speed - limit) * 60),
+        }},
+    })
+
+    if not res.ok then
+        return print('ATK: bøden kunne ikke skrives')
+    end
+
+    print(('ATK: %d kr, opkrævet: %s'):format(res.total, tostring(res.billed)))
+end)
+```
+
+## Computer i stationen
+
+```lua client.lua
+exports.ox_target:addBoxZone({
+    coords = vec3(441.7, -979.2, 30.7),
+    size   = vec3(1.0, 1.0, 1.0),
+    rotation = 0.0,
+    options = {
+        {
+            label = 'Åbn Politi Tablet',
+            icon  = 'fa-solid fa-tablet-screen-button',
+            onSelect = function()
+                exports.va_policemdt:OpenTablet()
+            end,
+        },
+    },
+})
+```
+
+## Rettighedsgated kommando
+
+Mønsteret du skal bruge, hver gang spillere kan udløse din kode.
+
+```lua server.lua
+RegisterCommand('udbetalloen', function(source)
+    -- Serveren afgør hvem spilleren er. Klienten spørges aldrig.
+    if not exports.va_policemdt:HasMdtPermission(source, 'oekonomi') then
+        return TriggerClientEvent('chat:addMessage', source, {
+            args = { 'MDT', 'Du har ikke adgang til dette.' },
+        })
+    end
+
+    -- …
+end, false)
+```
+
+## Vagtbonus efter timer
+
+```lua server.lua
+RegisterCommand('minbonus', function(source)
+    local src = source
+
+    if not exports.va_policemdt:IsPolice(src) then return end
+
+    local officer = exports.va_policemdt:GetOfficer(src)
+    if not officer then return end
+
+    local sheet = exports.va_policemdt:GetTimesheet(officer.identifier)
+
+    if sheet.hoursMonth < 20 then
+        return TriggerClientEvent('chat:addMessage', src, {
+            args = { 'Løn', ('Du mangler %.1f timer.'):format(20 - sheet.hoursMonth) },
+        })
+    end
+
+    -- udbetal bonus …
+end, false)
+```
+
+## Automatisk GPS-registrering fra garagen
+
+```lua server.lua
+AddEventHandler('mingarage:koeretoejUdleveret', function(src, plate, model)
+    if not exports.va_policemdt:IsPolice(src) then return end
+
+    -- Vognen er nu på kortet og på flådetavlen, uden at betjenten
+    -- skal huske /registergps.
+    exports.va_policemdt:TrackVehicle(plate, model)
+end)
+
+AddEventHandler('mingarage:koeretoejIndleveret', function(plate)
+    -- Ignoreres hvis der stadig sidder nogen i den — tag besætningen af først.
+    exports.va_policemdt:UntrackVehicle(plate)
+end)
+```
+
+## Parkér flåden ved vagtskifte
+
+```lua server.lua
+RegisterCommand('parkerflaade', function()
+    local parked = 0
+
+    for _, v in ipairs(exports.va_policemdt:GetFleet().vehicles) do
+        if #v.occupants == 0 and v.status ~= 'garage' then
+            if exports.va_policemdt:SetVehicleStatus(v.id, 'garage') then
+                parked = parked + 1
+            end
+        end
+    end
+
+    print(('Parkerede %d vogne'):format(parked))
+end, true)  -- true = kun konsol og admins
+```
+
+## Discord-status over aktive udkald
+
+Da API'et ikke har events, poller vi. Vælg intervallet efter hvor hurtigt du
+skal opdage ændringer — ikke lavere.
+
+```lua server.lua
+CreateThread(function()
+    local lastCount = -1
+
+    while true do
+        Wait(30000)  -- 30 sekunder
+
+        local calls = exports.va_policemdt:GetCalls()
+
+        -- Skriv kun når tallet faktisk ændrer sig.
+        if #calls ~= lastCount then
+            lastCount = #calls
+            TriggerEvent('mindiscord:opdaterStatus', ('%d aktive udkald'):format(#calls))
+        end
+    end
+end)
+```
+
+<Warning>
+  Poll ikke i en stram løkke. Hvert `GetCalls` bygger friske tabeller og rydder
+  udløbne opkald op — brugbart, men ikke gratis. 30 sekunder er rigeligt til et
+  statusfelt.
+</Warning>

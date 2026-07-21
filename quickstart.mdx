@@ -1,47 +1,105 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Kom i gang"
+description: "Kald dit første export fra din egen ressource"
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
+Denne guide tager dig fra ingenting til et fungerende kald mod Politi Tablet.
+Du bygger et lille script der rejser et udkald på kortet, når en kommando køres.
 
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+## Forudsætninger
 
-## Prerequisites
+- En kørende FiveM-server med **ESX** og **`va_policemdt`** installeret
+- Din egen ressource at skrive i — eller opret en ny mappe i `resources/`
 
-Before you begin, you must have:
+<Note>
+  Du behøver ikke ændre noget i `va_policemdt` selv. API'et er exports, som
+  enhver anden ressource kan kalde.
+</Note>
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+## Byg det
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Erklær afhængigheden">
+    Tilføj `va_policemdt` til din `fxmanifest.lua`. Det er ikke teknisk
+    påkrævet — exports slås op når de kaldes, ikke når ressourcen indlæses —
+    men det får serveren til at advare dig, hvis tabletten mangler.
 
-    ```bash
-    npm install your-package
+    ```lua fxmanifest.lua
+    fx_version 'cerulean'
+    game 'gta5'
+
+    dependencies {
+        'es_extended',
+        'va_policemdt',
+    }
+
+    server_script 'server.lua'
     ```
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
+  <Step title="Skriv serverkoden">
+    Alle data-exports ligger på serversiden. Her registrerer vi en kommando,
+    som enhver spiller kan køre — så det første vi gør, er at kontrollere hvem
+    de er.
+
+    ```lua server.lua
+    RegisterCommand('testkald', function(source)
+        local src = source
+
+        -- Stol aldrig på klienten. Serveren afgør hvem spilleren er.
+        if not exports.va_policemdt:IsMdtAuthed(src) then
+            return print(('%s er ikke logget ind i MDT\'et'):format(src))
+        end
+
+        local call = exports.va_policemdt:CreateCall(
+            'Testkald',        -- titel
+            'Legion Square',   -- sted
+            'mellem',          -- prioritet: hoej | mellem | lav
+            195.0,             -- x
+            -933.0             -- y
+        )
+
+        print(('Oprettede %s'):format(call.id))
+
+        if call.assigned then
+            print(('Patrulje %s rykker ud'):format(call.assigned.plate))
+        end
+    end, false)
     ```
+
+    <Warning>
+      `local src = source` i første linje er ikke pynt. `source` er en global,
+      der bliver overskrevet så snart en anden event-handler kører — læser du
+      den senere i funktionen, kan du ramme en helt anden spiller.
+    </Warning>
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
 
-    ```bash
-    your-cli start
+  <Step title="Prøv det">
+    Start din ressource og kør `/testkald` i spillet som en betjent, der er
+    logget ind i tabletten.
+
     ```
+    ensure min_ressource
+    ```
+
+    Opkaldet dukker op på kortet hos alle betjente på vagt. Er en patruljevogn
+    ledig, bliver den tildelt og får dispatch-beskeden i radioen.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## Hvad så nu
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Forstå tillidsmodellen" icon="shield-check" href="/api-reference/introduction">
+    Hvorfor server-exports er betroede, og client-exports aldrig er.
+  </Card>
+  <Card title="Se alle exports" icon="code" href="/api-reference/identity">
+    21 exports fordelt på identitet, udkald, flåde, personale og rapporter.
+  </Card>
+  <Card title="Flere eksempler" icon="book-open" href="/guides/recipes">
+    Butiksalarm, fartkamera med automatisk bøde, computer i stationen.
+  </Card>
+  <Card title="Åbn tabletten fra din kode" icon="tablet-screen-button" href="/api-reference/client">
+    Client-exports til at vise og skjule terminalen.
+  </Card>
+</CardGroup>

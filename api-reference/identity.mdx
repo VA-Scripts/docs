@@ -1,0 +1,171 @@
+---
+title: "Identitet og rettigheder"
+description: "Slå op hvem en spiller er, og hvad vedkommende må"
+---
+
+<Info>
+  **Server-exports.** Kaldes fra `server_script`. Se
+  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+</Info>
+
+Det er de her fem, du skal bruge til at gate din egen kode. Uden dem er alt
+andet i API'et åbent for enhver spiller, der kan udløse din event.
+
+## IsPolice
+
+Har spilleren det konfigurerede politijob?
+
+<ParamField path="src" type="number" required>
+  Spillerens server id.
+</ParamField>
+
+<ResponseField name="returns" type="boolean" />
+
+```lua server.lua
+if exports.va_policemdt:IsPolice(src) then
+    -- åbn våbenskabet
+end
+```
+
+Brug den til ting **ude i spilverdenen**: en dør på stationen, et våbenskab, en
+patruljevogn. Til alt der repræsenterer MDT-arbejde, brug `IsMdtAuthed`.
+
+## IsMdtAuthed
+
+Har spilleren gennemført MDT-login i denne session?
+
+<ParamField path="src" type="number" required>
+  Spillerens server id.
+</ParamField>
+
+<ResponseField name="returns" type="boolean" />
+
+```lua server.lua
+RegisterNetEvent('mitscript:opretRapport', function(data)
+    local src = source
+    if not exports.va_policemdt:IsMdtAuthed(src) then return end
+    -- …
+end)
+```
+
+<Note>
+  Tabletten beder om adgangskode ud over jobbet. En betjent på vagt, der aldrig
+  har åbnet terminalen, giver `true` fra `IsPolice` men `false` herfra.
+</Note>
+
+## HasMdtPermission
+
+Server-autoritativt tjek af én rettighed.
+
+<ParamField path="src" type="number" required>
+  Spillerens server id.
+</ParamField>
+
+<ParamField path="permissionId" type="string" required>
+  Rettighedens id. Se listen nedenfor.
+</ParamField>
+
+<ResponseField name="returns" type="boolean" />
+
+```lua server.lua
+RegisterCommand('udbetalloen', function(source)
+    if not exports.va_policemdt:HasMdtPermission(source, 'oekonomi') then
+        return TriggerClientEvent('chat:addMessage', source, {
+            args = { 'MDT', 'Du har ikke adgang til dette.' },
+        })
+    end
+    -- …
+end, false)
+```
+
+### Rettigheds-id'er
+
+| Id | Dækker |
+| --- | --- |
+| `mdt` | Adgang til selve terminalen |
+| `strafferegister` | Borgeropslag og straffeattester |
+| `rapportarkiv` | Rapporter og sagsakter |
+| `efterlysninger` | Udstede og administrere efterlysninger |
+| `vaabenkammer` | Våbenregister |
+| `bevislager` | Beviser |
+| `beslaglagte` | Beslaglagte køretøjer |
+| `personale` | Personaleadministration |
+| `oekonomi` | Økonomi og bødetilsyn |
+| `adgangsstyring` | Rettighedsstyring og straffelov |
+
+<Note>
+  De effektive rettigheder er rangmatricen plus tildelinger fra særlige roller
+  plus personlige undtagelser — hvor en personlig fratagelse slår en
+  rolletildeling. Du behøver ikke regne på det; dette export giver svaret.
+</Note>
+
+## GetMdtPermissions
+
+Alle rettigheder spilleren reelt har.
+
+<ParamField path="src" type="number" required>
+  Spillerens server id.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  `{ [permissionId] = true }`. Tom tabel for spillere uden politijobbet.
+</ResponseField>
+
+```lua server.lua
+local perms = exports.va_policemdt:GetMdtPermissions(src)
+
+if perms.personale and perms.oekonomi then
+    -- ledelsesværktøjer
+end
+```
+
+## GetOfficer
+
+Betjentkortet for en spiller.
+
+<ParamField path="src" type="number" required>
+  Spillerens server id.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  `nil` når spilleren er offline eller ikke har politijobbet.
+
+  <Expandable title="felter">
+    <ResponseField name="identifier" type="string">
+      ESX-identifier. Brug den til de exports der tager en identifier frem for
+      en `src`.
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Betjentens navn, fx `M. Sørensen`.
+    </ResponseField>
+    <ResponseField name="initials" type="string">
+      Op til tre tegn, fx `MS`.
+    </ResponseField>
+    <ResponseField name="rank" type="string">
+      ESX `grade_label`, fx `Politiassistent`.
+    </ResponseField>
+    <ResponseField name="grade" type="number">
+      ESX-graden som tal.
+    </ResponseField>
+    <ResponseField name="callsign" type="string">
+      Kaldesignal, fx `Alpha-12`. Tom streng når intet er sat.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua server.lua
+local officer = exports.va_policemdt:GetOfficer(src)
+if not officer then return end
+
+print(('%s %s (%s)'):format(officer.rank, officer.name, officer.callsign))
+```
+
+<Warning>
+  Tjek altid for `nil`. Spilleren kan være hoppet af serveren, eller være
+  fyret fra politiet, mellem at din event blev udløst og du kalder her.
+</Warning>
+
+<Note>
+  `GetOfficer` returnerer `grade`, mens tablettens interne NUI-payloads bruger
+  `rankIndex` om det samme tal. Byg mod formen her.
+</Note>

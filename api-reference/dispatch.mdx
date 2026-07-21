@@ -1,0 +1,153 @@
+---
+title: "Udkald"
+description: "Rejs, læs og luk opkald på kortet"
+---
+
+<Info>
+  **Server-exports.** Kaldes fra `server_script`. Se
+  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+</Info>
+
+Udkald er den mest oplagte integration: dit alarmscript, panikknap eller
+ANPG-station rejser et opkald, og det lander på kortet hos alle betjente på vagt.
+
+<Note>
+  Opkald lever **kun i hukommelsen** — de er flygtig radiotrafik, ikke sagsdata.
+  De udløber efter `Config.shotSpotter.callTtl` (standard 600 sekunder) og
+  overlever ikke en genstart af ressourcen.
+</Note>
+
+## CreateCall
+
+Rejs et opkald på kortet.
+
+<ParamField path="title" type="string" required>
+  Kort overskrift, fx `Indbrudsalarm`.
+</ParamField>
+
+<ParamField path="location" type="string" required>
+  Stedbetegnelse som mennesker læser, fx `Vangelico, Portola Dr`.
+</ParamField>
+
+<ParamField path="priority" type="string" default="mellem">
+  `hoej`, `mellem` eller `lav`. Styrer farven på kortet og hvor kraftigt
+  betjentenes alarm slår ud.
+</ParamField>
+
+<ParamField path="x" type="number" required>
+  Verdenskoordinat.
+</ParamField>
+
+<ParamField path="y" type="number" required>
+  Verdenskoordinat.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Det oprettede opkald.
+
+  <Expandable title="felter">
+    <ResponseField name="id" type="string">
+      Fx `call-7`. Gem den — du skal bruge den til `CloseCall`.
+    </ResponseField>
+    <ResponseField name="title" type="string" />
+    <ResponseField name="location" type="string" />
+    <ResponseField name="priority" type="string">
+      `hoej` · `mellem` · `lav`
+    </ResponseField>
+    <ResponseField name="time" type="string">
+      Klokkeslæt som `14:12`.
+    </ResponseField>
+    <ResponseField name="createdAt" type="number">
+      Unix-tidsstempel.
+    </ResponseField>
+    <ResponseField name="position" type="table">
+      `{ x = number, y = number }`
+    </ResponseField>
+    <ResponseField name="assigned" type="table | nil">
+      Den automatisk tildelte patrulje: `{ id = string, plate = string }`.
+      `nil` når ingen vogn var ledig.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua server.lua
+local call = exports.va_policemdt:CreateCall(
+    'Indbrudsalarm', 'Vangelico, Portola Dr', 'hoej', 1234.5, -567.8
+)
+
+if call.assigned then
+    print(('Patrulje %s rykker ud'):format(call.assigned.plate))
+end
+```
+
+### Hvad der sker automatisk
+
+Opkaldet sendes til alle betjente der er logget ind, og forsøger at hive den
+næste ledige patruljevogn ind efter tur — så belastningen fordeles i stedet for
+altid at ramme den første vogn på tavlen. Bliver en vogn tildelt, får dens
+besætning dispatch-beskeden i radioen.
+
+<Warning>
+  `assigned` er `nil`, når ingen vogn stod på status `patrulje`. Antag aldrig at
+  feltet findes.
+</Warning>
+
+## GetCalls
+
+Alle aktive opkald, nyeste først.
+
+<ResponseField name="returns" type="table[]">
+  Array af opkald i samme form som `CreateCall` returnerer.
+</ResponseField>
+
+```lua server.lua
+for _, call in ipairs(exports.va_policemdt:GetCalls()) do
+    print(('[%s] %s — %s'):format(call.priority, call.title, call.location))
+end
+```
+
+<Note>
+  Oprydningen af udløbne opkald sker **ved læsning**. Et script der aldrig
+  kalder `GetCalls`, ser ikke listen skrumpe af sig selv.
+</Note>
+
+## CloseCall
+
+Luk et opkald og frigiv dets tildelte vogn.
+
+<ParamField path="id" type="string" required>
+  Opkaldets id, fx `call-7`.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `false` når intet opkald havde det id — typisk fordi det allerede er udløbet.
+</ResponseField>
+
+```lua server.lua
+if not exports.va_policemdt:CloseCall(call.id) then
+    print('Opkaldet var allerede væk')
+end
+```
+
+<Tip>
+  Luk dine egne opkald, når kilden er ovre — en butiksalarm der nulstiller sig
+  selv, bør også lukke sit opkald. Ellers optager det plads på kortet indtil
+  det udløber, og den tildelte vogn bliver hængende på udrykning.
+</Tip>
+
+## Et komplet eksempel
+
+En butiksalarm der rejser et opkald og rydder op efter sig selv.
+
+```lua server.lua
+AddEventHandler('minealarmer:udloest', function(butik, coords)
+    local call = exports.va_policemdt:CreateCall(
+        'Indbrudsalarm', butik, 'hoej', coords.x, coords.y
+    )
+
+    -- Alarmen nulstiller sig selv efter fem minutter.
+    SetTimeout(5 * 60 * 1000, function()
+        exports.va_policemdt:CloseCall(call.id)
+    end)
+end)
+```

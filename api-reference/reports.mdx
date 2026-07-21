@@ -1,0 +1,193 @@
+---
+title: "Rapporter og bøder"
+description: "Hent en hel sagsakt, eller udsted en bøde på en betjents vegne"
+---
+
+<Info>
+  **Server-exports.** Kaldes fra `server_script`. Se
+  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+</Info>
+
+## GetReport
+
+Hent en hel sagsakt.
+
+<ParamField path="caseNumber" type="string" required>
+  Sagsnummeret, fx `S-2043`.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  `nil` når sagsnummeret ikke findes.
+
+  <Expandable title="felter">
+    <ResponseField name="caseNumber" type="string" />
+    <ResponseField name="title" type="string" />
+    <ResponseField name="kind" type="string" />
+    <ResponseField name="category" type="string" />
+    <ResponseField name="priority" type="string">
+      `hoej` · `mellem` · `lav`
+    </ResponseField>
+    <ResponseField name="location" type="string" />
+    <ResponseField name="submitted" type="boolean">
+      Er rapporten indsendt, eller stadig et udkast?
+    </ResponseField>
+    <ResponseField name="createdAt" type="number">
+      Unix-tidsstempel.
+    </ResponseField>
+    <ResponseField name="officer" type="table">
+      `{ name, rank, callsign }` — den rapportansvarlige.
+    </ResponseField>
+    <ResponseField name="colleagues" type="table[]">
+      Medvirkende betjente.
+    </ResponseField>
+    <ResponseField name="state" type="table">
+      Selve rapportindholdet.
+
+      <Expandable title="state">
+        <ResponseField name="narrative" type="string">
+          Sagsfremstillingen.
+        </ResponseField>
+        <ResponseField name="involved" type="table[]">
+          `{ id, name, role }` — mistænkte, vidner, ofre, anmeldere.
+        </ResponseField>
+        <ResponseField name="charges" type="table[]">
+          `{ id, paragraf, title, penalty, tier, maxMonths, fine, plea }`
+        </ResponseField>
+        <ResponseField name="vehicles" type="table[]">
+          `{ plate, model, owner }`
+        </ResponseField>
+        <ResponseField name="items" type="table[]">
+          `{ id, name, quantity, category }`
+        </ResponseField>
+        <ResponseField name="photos" type="table[]">
+          `{ id, url, label, takenAt, takenBy }`
+        </ResponseField>
+        <ResponseField name="signature" type="string" />
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Warning>
+  **`GetReport` har intet rettighedstjek.** Det returnerer hele sagsakten —
+  sagsfremstilling, sigtelser, involverede personer, køretøjer, koster og
+  fotos.
+
+  Det er de samme data, som aktindsigt beskytter bag en engangskode. Videregiv
+  dem aldrig til spillere uden selv at gate det først.
+</Warning>
+
+```lua server.lua
+RegisterNetEvent('mitscript:seSag', function(caseNumber)
+    local src = source
+
+    -- Uden dette lækker du sagsakter til hvem som helst.
+    if not exports.va_policemdt:HasMdtPermission(src, 'rapportarkiv') then
+        return
+    end
+
+    local report = exports.va_policemdt:GetReport(caseNumber)
+    if not report then return end
+
+    TriggerClientEvent('mitscript:visSag', src, report)
+end)
+```
+
+## IssueFine
+
+Udsted en bøde på en betjents vegne.
+
+<ParamField path="officerIdentifier" type="string" required>
+  ESX-identifier på den betjent, bøden skrives i navn af.
+</ParamField>
+
+<ParamField path="data" type="table" required>
+  <Expandable title="felter">
+    <ParamField path="citizenId" type="string" required>
+      ESX-identifier på borgeren der får bøden.
+    </ParamField>
+    <ParamField path="caseNumber" type="string">
+      Knyt bøden til en sag. Valgfri.
+    </ParamField>
+    <ParamField path="lines" type="table[]" required>
+      Bødelinjerne: `{ paragraf, description, amount }`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  <Expandable title="felter">
+    <ResponseField name="ok" type="boolean">
+      `false` ved ugyldige argumenter, eller hvis ingen linje havde et gyldigt beløb.
+    </ResponseField>
+    <ResponseField name="total" type="number">
+      Samlet beløb.
+    </ResponseField>
+    <ResponseField name="count" type="number">
+      Antal linjer der blev skrevet.
+    </ResponseField>
+    <ResponseField name="billed" type="boolean">
+      Om betalingssystemet tog regningen. Se nedenfor.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua server.lua
+local res = exports.va_policemdt:IssueFine(officerIdentifier, {
+    citizenId  = 'char1:def…',
+    caseNumber = 'S-2043',
+    lines = {
+        { paragraf = '§ 118', description = 'Hastighed 92/50', amount = 2500 },
+    },
+})
+
+if res.ok then
+    print(('%d kr på %d linjer'):format(res.total, res.count))
+end
+```
+
+### Beløb bliver renset
+
+Kun **positive heltal** accepteres, der er højst **20 linjer** pr. bøde, og hvert
+beløb har et loft. Linjer med ugyldigt beløb springes over — er der ingen gyldige
+linjer tilbage, returneres `{ ok = false }` og intet skrives.
+
+### Register og opkrævning er to ting
+
+<Note>
+  `billed = false` betyder at bøden **er registreret i MDT'et**, men at
+  betalingsadapteren ikke tog den. Registret står ved magt uanset — opkrævningen
+  er en separat mekanisme, konfigureret i `Config.billing`.
+</Note>
+
+Bøden sendes som én samlet regning til `Config.billing.send`, præcis som når en
+betjent udsteder den fra tabletten.
+
+## Et komplet eksempel
+
+Et fartkamera der bøder automatisk.
+
+```lua server.lua
+AddEventHandler('minatk:maalt', function(citizenIdentifier, speed, limit)
+    if speed <= limit then return end
+
+    local res = exports.va_policemdt:IssueFine('char1:atk-system', {
+        citizenId = citizenIdentifier,
+        lines = {{
+            paragraf    = '§ 118',
+            description = ('Hastighed %d/%d (ATK)'):format(speed, limit),
+            amount      = math.floor((speed - limit) * 60),
+        }},
+    })
+
+    if not res.ok then
+        print('ATK: bøden kunne ikke skrives')
+    end
+end)
+```
+
+<Tip>
+  Automatiske systemer bør have deres **egen service-identifier** frem for at
+  skrive bøder i en rigtig betjents navn. Så kan bødetilsynet skelne mellem
+  maskine og menneske, og ingen betjent får en statistik der ikke er deres.
+</Tip>

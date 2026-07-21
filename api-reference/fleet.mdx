@@ -1,0 +1,193 @@
+---
+title: "Flåde og GPS"
+description: "Læs flådetavlen, flyt vogne og spor køretøjer på kortet"
+---
+
+<Info>
+  **Server-exports.** Kaldes fra `server_script`. Se
+  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+</Info>
+
+Flådetavlen er betjentenes overblik over hvilke vogne der kører, hvem der sidder
+i dem, og hvad de laver. GPS-sporingen er den tilhørende live-position på kortet.
+
+## Statusser
+
+En vogn står altid på præcis én af fire:
+
+| Status | Betyder |
+| --- | --- |
+| `patrulje` | På patrulje — **kun disse kan tildeles et udkald** |
+| `udrykning` | Ude på en opgave |
+| `stationaer` | Holder stille, fx ved et gerningssted |
+| `garage` | Ude af drift |
+
+<Warning>
+  Kun vogne på `patrulje` kommer i betragtning, når et opkald skal tildeles.
+  Efterlader du vogne på `udrykning`, tømmes puljen af udrykningsklare enheder.
+</Warning>
+
+## GetFleet
+
+Hele flådetavlen.
+
+<ResponseField name="returns" type="table">
+  <Expandable title="felter">
+    <ResponseField name="vehicles" type="table[]">
+      Vogne på tavlen, hver med sin besætning.
+
+      <Expandable title="vogn">
+        <ResponseField name="id" type="string">
+          Fx `gps-AB12345`. Bruges til `SetVehicleStatus`.
+        </ResponseField>
+        <ResponseField name="plate" type="string" />
+        <ResponseField name="model" type="string" />
+        <ResponseField name="area" type="string">
+          Områdebetegnelse, fx `GPS-sporet`.
+        </ResponseField>
+        <ResponseField name="status" type="string">
+          `patrulje` · `udrykning` · `stationaer` · `garage`
+        </ResponseField>
+        <ResponseField name="occupants" type="table[]">
+          Besætningen. Se betjentformen nedenfor.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="pool" type="table[]">
+      Betjente på vagt, som ikke sidder i en vogn. Samme betjentform.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+Betjentformen i `occupants` og `pool`:
+
+```lua
+{
+    id       = 'char1:abc…',   -- ESX identifier
+    name     = 'M. Sørensen',
+    initials = 'MS',
+    callsign = 'Alpha-12',
+    role     = 'foerer',       -- eller 'passager'
+}
+```
+
+<Note>
+  Den første der sætter sig i en vogn bliver `foerer`, alle efterfølgende bliver
+  `passager`.
+</Note>
+
+```lua server.lua
+local fleet = exports.va_policemdt:GetFleet()
+
+print(('%d vogne, %d betjente uden vogn'):format(#fleet.vehicles, #fleet.pool))
+
+for _, v in ipairs(fleet.vehicles) do
+    print(('%s (%s) — %d ombord'):format(v.plate, v.status, #v.occupants))
+end
+```
+
+## SetVehicleStatus
+
+Flyt en vogn mellem statusser.
+
+<ParamField path="vehicleId" type="string" required>
+  Vognens id fra `GetFleet`, fx `gps-AB12345`.
+</ParamField>
+
+<ParamField path="status" type="string" required>
+  `patrulje`, `udrykning`, `stationaer` eller `garage`.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `false` ved ukendt vogn eller ugyldig status. Ugyldige statusser gemmes ikke.
+</ResponseField>
+
+```lua server.lua
+exports.va_policemdt:SetVehicleStatus('gps-AB12345', 'garage')
+```
+
+## TrackVehicle
+
+Sæt en vogn på live-kortet og flådetavlen.
+
+<ParamField path="plate" type="string" required>
+  Nummerpladen.
+</ParamField>
+
+<ParamField path="model" type="string" required>
+  Modelnavnet som det skal vises.
+</ParamField>
+
+```lua server.lua
+exports.va_policemdt:TrackVehicle('AB12345', 'Police Interceptor')
+```
+
+<Note>
+  Betjente gør normalt det her selv med `/registergps` inde i vognen. Brug
+  exportet, når noget andet skal registrere vognen — fx et garagescript der
+  automatisk sporer alt der køres ud.
+</Note>
+
+## UntrackVehicle
+
+Fjern en sporet vogn igen.
+
+<ParamField path="plate" type="string" required>
+  Nummerpladen.
+</ParamField>
+
+<Warning>
+  Kaldet **ignoreres**, så længe vognen stadig har besætning på tavlen. Tag
+  besætningen af først, ellers sker der ingenting — og du får ingen fejl.
+</Warning>
+
+```lua server.lua
+exports.va_policemdt:UntrackVehicle('AB12345')
+```
+
+## GetGpsUnits
+
+Live-positioner for alle sporede vogne.
+
+<ResponseField name="returns" type="table[]">
+  <Expandable title="enhed">
+    <ResponseField name="plate" type="string" />
+    <ResponseField name="model" type="string" />
+    <ResponseField name="position" type="table">
+      `{ x = number, y = number }`
+    </ResponseField>
+    <ResponseField name="online" type="boolean">
+      `false` betyder at sporingen har mistet køretøjet — positionen er da den
+      sidst kendte.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua server.lua
+for _, unit in ipairs(exports.va_policemdt:GetGpsUnits()) do
+    if not unit.online then
+        print(('%s har mistet signal'):format(unit.plate))
+    end
+end
+```
+
+## Et komplet eksempel
+
+Parkér alle tomme vogne, når vagten slutter.
+
+```lua server.lua
+RegisterCommand('parkerflaade', function()
+    local parked = 0
+
+    for _, v in ipairs(exports.va_policemdt:GetFleet().vehicles) do
+        if #v.occupants == 0 and v.status ~= 'garage' then
+            if exports.va_policemdt:SetVehicleStatus(v.id, 'garage') then
+                parked = parked + 1
+            end
+        end
+    end
+
+    print(('Parkerede %d vogne'):format(parked))
+end, true)  -- true = kun konsol og admins
+```

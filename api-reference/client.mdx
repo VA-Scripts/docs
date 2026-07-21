@@ -1,0 +1,93 @@
+---
+title: "Klient"
+description: "Vis og skjul terminalen fra din egen kode"
+---
+
+<Warning>
+  **Client-exports er ikke autoritative.** De kører på spillerens egen maskine,
+  og en modificeret klient kan kalde dem alle. Intet her returnerer noget,
+  serveren ville stole på — det er ren lokal grænsefladetilstand.
+
+  Skal noget have betydning, skal afgørelsen ligge på serveren. Se
+  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+</Warning>
+
+<Info>
+  Kaldes fra `client_script`.
+</Info>
+
+## OpenTablet
+
+Åbn tabletten — det samme som `O`-tasten og `/show-nui`.
+
+```lua client.lua
+exports.va_policemdt:OpenTablet()
+```
+
+<Note>
+  At åbne en allerede åben tablet gør ingenting. Gentagne kald kan derfor ikke
+  bringe NUI-fokus ud af sync.
+</Note>
+
+## CloseTablet
+
+Luk tabletten.
+
+```lua client.lua
+exports.va_policemdt:CloseTablet()
+```
+
+## ToggleTablet
+
+Åbn hvis lukket, luk hvis åben.
+
+<ResponseField name="returns" type="boolean">
+  Tilstanden **efter** skiftet — `true` betyder at tabletten nu er åben.
+</ResponseField>
+
+```lua client.lua
+local nowOpen = exports.va_policemdt:ToggleTablet()
+```
+
+## IsTabletOpen
+
+Er tabletten fremme lige nu?
+
+<ResponseField name="returns" type="boolean" />
+
+```lua client.lua
+if exports.va_policemdt:IsTabletOpen() then
+    -- undlad at vise din egen HUD ovenpå
+end
+```
+
+<Tip>
+  Nyttigt til at undgå at dine egne overlays tegner oven på terminalen, eller
+  til at pause noget mens betjenten arbejder i den.
+</Tip>
+
+## Et komplet eksempel
+
+En computer i stationen, man kan interagere med.
+
+```lua client.lua
+exports.ox_target:addBoxZone({
+    coords = vec3(441.7, -979.2, 30.7),
+    size   = vec3(1.0, 1.0, 1.0),
+    rotation = 0.0,
+    options = {
+        {
+            label = 'Åbn Politi Tablet',
+            icon  = 'fa-solid fa-tablet-screen-button',
+            onSelect = function()
+                exports.va_policemdt:OpenTablet()
+            end,
+        },
+    },
+})
+```
+
+<Note>
+  Tabletten kræver stadig MDT-login, når den åbnes. Exportet viser terminalen —
+  det logger ingen ind, og det omgår ingen rettigheder.
+</Note>
