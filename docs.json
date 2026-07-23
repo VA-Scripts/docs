@@ -34,6 +34,34 @@
           "guides/recipes"
         ]
       }
+    ],
+    "groups": [
+      {
+        "group": "Kom i gang",
+        "pages": [
+          "forste-login",
+          "index",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "API-reference",
+        "pages": [
+          "api-reference/introduction",
+          "api-reference/identity",
+          "api-reference/dispatch",
+          "api-reference/fleet",
+          "api-reference/personnel",
+          "api-reference/reports",
+          "api-reference/client"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/recipes"
+        ]
+      }
     ]
   },
   "navbar": {
