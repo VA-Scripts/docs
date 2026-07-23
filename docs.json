@@ -57,5 +57,9 @@
   "logo": {
     "light": "/images/logo.png",
     "dark": "/images/logo.png"
+  },
+  "appearance": {
+    "default": "dark",
+    "strict": false
   }
 }
