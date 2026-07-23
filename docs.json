@@ -7,7 +7,6 @@
     "light": "#CAD100",
     "dark": "#9EA300"
   },
-  "favicon": "/favicon.svg",
   "navigation": {
     "pages": [
       {
