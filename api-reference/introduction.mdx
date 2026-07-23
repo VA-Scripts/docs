@@ -1,25 +1,6 @@
 ---
-title: "Introduktion"
+title: "Overblik"
 ---
-
-<Tabs>
-  <Tab title="Server-exports">
-    ```lua server.lua
-    RegisterNetEvent('mitscript:lukOpkald', function(callId)
-        local src = source
-    
-        -- Uden denne linje kan enhver spiller lukke ethvert opkald.
-        if not exports.va_policemdt:IsMdtAuthed(src) then return end
-    
-        exports.va_policemdt:CloseCall(callId)
-    end)
-    ```
-
-    `IsPolice`, `IsMdtAuthed` og `HasMdtPermission` findes præcis til det formål.
-  </Tab>
-  <Tab title="Client-exports">
-  </Tab>
-</Tabs>
 
 ## Alle exports
 
