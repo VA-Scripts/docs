@@ -53,5 +53,9 @@
       "cursor",
       "vscode"
     ]
+  },
+  "logo": {
+    "light": "/images/logo.png",
+    "dark": "/images/logo.png"
   }
 }
