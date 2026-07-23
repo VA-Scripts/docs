@@ -4,12 +4,10 @@ description: "Timesedler og certifikater for en betjent"
 ---
 
 <Info>
-  **Server-exports.** Kaldes fra `server_script`. Se
-  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+  **Server-exports.** Kaldes fra `server_script`. 
 </Info>
 
-Begge exports her tager en **ESX identifier**, ikke en `src` — så de også virker
-for betjente der er offline.
+Begge exports her tager en **ESX identifier**, ikke en `src` — så de også virker for betjente der er offline.
 
 ```lua server.lua
 local officer = exports.va_policemdt:GetOfficer(src)
@@ -31,24 +29,31 @@ Timer, vagter og vagtstatus.
     <ResponseField name="hoursMonth" type="number">
       Timer i indeværende måned.
     </ResponseField>
+
     <ResponseField name="hoursPrevMonth" type="number">
       Timer i forrige måned — til sammenligning.
     </ResponseField>
+
     <ResponseField name="week" type="number">
       Timer i indeværende uge.
     </ResponseField>
+
     <ResponseField name="days" type="table[]">
       Timer fordelt pr. dag over de seneste 14 dage.
     </ResponseField>
+
     <ResponseField name="shifts" type="table[]">
       De seneste vagter.
     </ResponseField>
+
     <ResponseField name="avgShift" type="number">
       Gennemsnitlig vagtlængde.
     </ResponseField>
+
     <ResponseField name="overtime" type="number">
       Overarbejde.
     </ResponseField>
+
     <ResponseField name="onShift" type="boolean">
       Er betjenten på vagt lige nu?
     </ResponseField>
@@ -64,8 +69,7 @@ end
 ```
 
 <Note>
-  Kaldet lukker den igangværende vagt af først, så `hoursMonth` tæller også den
-  tid betjenten har været på vagt *nu*. Tallet er derfor altid aktuelt.
+  Kaldet lukker den igangværende vagt af først, så `hoursMonth` tæller også den tid betjenten har været på vagt _nu_. Tallet er derfor altid aktuelt.
 </Note>
 
 ## GetCertificates
@@ -78,26 +82,30 @@ Tildelte certifikater og diplomer.
 
 <ResponseField name="returns" type="table[]">
   <Expandable title="certifikat">
-    <ResponseField name="id" type="number" />
     <ResponseField name="name" type="string">
       Fx `Indsatsleder`.
     </ResponseField>
+
     <ResponseField name="short" type="string">
       Kort form til badges.
     </ResponseField>
-    <ResponseField name="description" type="string" />
+
     <ResponseField name="kind" type="string">
       `certifikat` eller `diplom`.
     </ResponseField>
+
     <ResponseField name="color" type="string">
       Farvenøgle til visning.
     </ResponseField>
+
     <ResponseField name="note" type="string">
       Fritekst fra den der tildelte.
     </ResponseField>
+
     <ResponseField name="awardedBy" type="string">
       Hvem der tildelte det.
     </ResponseField>
+
     <ResponseField name="awardedAt" type="number">
       Unix-tidsstempel.
     </ResponseField>
@@ -115,9 +123,7 @@ end
 ```
 
 <Tip>
-  Certifikater er en pæn måde at gate dine egne features på uden at røre
-  rangsystemet: giv `Helikopterpilot` som certifikat, og lad dit
-  helikopterscript slå op her.
+  Certifikater er en pæn måde at gate dine egne features på uden at røre rangsystemet: giv `Helikopterpilot` som certifikat, og lad dit helikopterscript slå op her.
 </Tip>
 
 ## Et komplet eksempel

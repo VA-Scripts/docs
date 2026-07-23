@@ -3,26 +3,21 @@ title: "Politi Tablet"
 description: "En MDT til ESX — og et API du kan bygge videre på"
 ---
 
-**Politi Tablet** (`va_policemdt`) er en politi-MDT til FiveM-servere på ESX.
-Betjente åbner den med `O`: strafferegister, rapportarkiv, efterlysninger, kort
-med live GPS, flådestyring, personaleadministration og økonomi.
+**Politi Tablet** (`va_policemdt`) er en politi-MDT til FiveM-servere på ESX. Betjente åbner den med `O`: strafferegister, rapportarkiv, efterlysninger, kort med live GPS, flådestyring, personaleadministration og økonomi.
 
-Ud over selve tabletten eksponerer ressourcen et **export-API**, så du kan bygge
-dine egne features oven på den — rejse et opkald fra dit alarmscript, udstede
-bøder fra et fartkamera, eller læse flåden ind i et dashboard.
+Ud over selve tabletten eksponerer ressourcen et **export-API**, så du kan bygge dine egne features oven på den — rejse et opkald fra dit alarmscript, udstede bøder fra et fartkamera, eller læse flåden ind i et dashboard.
 
 <CardGroup cols={2}>
   <Card title="Kom i gang" icon="rocket" href="/quickstart">
     Kald dit første export på fem minutter.
   </Card>
+
   <Card title="API-reference" icon="code" href="/api-reference/introduction">
     Alle exports med signatur, returværdi og datastrukturer.
   </Card>
+
   <Card title="Opskrifter" icon="book-open" href="/guides/recipes">
     Færdige eksempler: butiksalarm, fartkamera, station-computer.
-  </Card>
-  <Card title="Tillidsmodellen" icon="shield-check" href="/api-reference/introduction#tillidsmodellen">
-    Hvad server-exports må, og hvorfor client-exports aldrig er autoritative.
   </Card>
 </CardGroup>
 
@@ -30,15 +25,17 @@ bøder fra et fartkamera, eller læse flåden ind i et dashboard.
 
 <CardGroup cols={2}>
   <Card title="Identitet og rettigheder" icon="id-card" href="/api-reference/identity">
-    Slå op om en spiller er betjent, er logget ind i MDT'et, og hvilke
-    rettigheder vedkommende har.
+    Slå op om en spiller er betjent, er logget ind i MDT'et, og hvilke rettigheder vedkommende har.
   </Card>
-  <Card title="Udkald" icon="tower-broadcast" href="/api-reference/dispatch">
-    Rejs, læs og luk opkald på kortet.
+
+  <Card title="Opkald" icon="tower-broadcast" href="/api-reference/dispatch">
+    Opret, læs og luk opkald på kortet.
   </Card>
+
   <Card title="Flåde og GPS" icon="car" href="/api-reference/fleet">
     Læs flådetavlen, flyt vogne mellem statusser, spor køretøjer.
   </Card>
+
   <Card title="Rapporter og bøder" icon="file-lines" href="/api-reference/reports">
     Hent en hel sagsakt, eller udsted en bøde på en betjents vegne.
   </Card>
@@ -46,17 +43,12 @@ bøder fra et fartkamera, eller læse flåden ind i et dashboard.
 
 ## Sproget i tabletten
 
-Tabletten findes på **dansk, svensk og norsk**. Betjenten vælger selv sprog
-under **Indstillinger → Funktioner**, og valget gemmes lokalt på den enkelte
-terminal.
+Tabletten findes på **dansk, svensk og norsk**. Betjenten vælger selv sprog under **Indstillinger → Funktioner**, og valget gemmes lokalt på den enkelte terminal.
 
 <Note>
-  Sprogvalget dækker tabletgrænsefladen. Serverens notifikationer ude i spillet
-  er fortsat på dansk.
+  Sprogvalget dækker tabletgrænsefladen. Serverens notifikationer ude i spillet er fortsat på dansk.
 </Note>
 
 <Warning>
-  API'et har **ingen events** i denne version. Du kan spørge om tilstand, men
-  ikke abonnere på ændringer. Se [Ikke med i denne
-  version](/api-reference/introduction#ikke-med-i-denne-version).
+  API'et har **ingen events** i denne version. Har du brug for dem kontakt mig på discorden 🧏
 </Warning>

@@ -1,138 +1,25 @@
 ---
 title: "Introduktion"
-description: "Tillidsmodel, konventioner og hvad du kan forvente af API'et"
 ---
-
-Ressourcenavnet er **`va_policemdt`**. Alle eksempler bruger det navn — har du
-omdøbt mappen, skal du rette det tilsvarende.
-
-```lua
-exports.va_policemdt:GetOfficer(src)
-```
-
-<Tip>
-  Formen `exports['va_policemdt']:GetOfficer(src)` virker også og er den du skal
-  bruge, hvis ressourcenavnet indeholder tegn der ikke kan stå i en Lua-variabel
-  (bindestreger, tal først). `va_policemdt` er et gyldigt navn, så punktum-formen
-  er fin her.
-</Tip>
-
-## Tillidsmodellen
-
-Det her er den vigtigste side i dokumentationen. Læs den, før du kalder noget.
 
 <Tabs>
   <Tab title="Server-exports">
-    **Server-exports er betroede.** De kan kun kaldes fra andre *server*-scripts
-    — altså kode, som serverejeren selv har installeret. Derfor gentager de
-    ikke de politi- og login-kontroller, som tabletten lægger på sin egen
-    trafik. Et administrationsscript har al mulig ret til at lukke et opkald
-    eller udstede en bøde.
-
-    Bagsiden: **det er dit ansvar at afgøre hvem der må hvad.** Eksponerer du
-    noget af det her til spillere, skal du selv gate det først.
-
     ```lua server.lua
     RegisterNetEvent('mitscript:lukOpkald', function(callId)
         local src = source
-
+    
         -- Uden denne linje kan enhver spiller lukke ethvert opkald.
         if not exports.va_policemdt:IsMdtAuthed(src) then return end
-
+    
         exports.va_policemdt:CloseCall(callId)
     end)
     ```
 
     `IsPolice`, `IsMdtAuthed` og `HasMdtPermission` findes præcis til det formål.
   </Tab>
-
   <Tab title="Client-exports">
-    **Client-exports er ikke autoritative.** De kører på spillerens egen maskine,
-    og en modificeret klient kan kalde hvad som helst af det.
-
-    Intet client-export returnerer noget, serveren ville stole på — det er ren
-    lokal grænsefladetilstand. Bygger du noget, der har betydning, skal
-    afgørelsen ligge på serveren.
-
-    ```lua client.lua
-    -- Fint: en lokal UI-handling.
-    exports.va_policemdt:OpenTablet()
-
-    -- Aldrig: lad ikke klienten afgøre om noget må ske.
-    if exports.va_policemdt:IsTabletOpen() then
-        TriggerServerEvent('mitscript:givMigPenge')  -- serveren skal tjekke selv
-    end
-    ```
   </Tab>
 </Tabs>
-
-## Politibetjent er ikke det samme som logget ind
-
-To forskellige spørgsmål, som ofte forveksles:
-
-| Spørgsmål | Export | Brug til |
-| --- | --- | --- |
-| Har spilleren politijobbet? | `IsPolice(src)` | Ting ude i spilverdenen — en patruljevogn, en dør på stationen, et våbenskab |
-| Er spilleren logget ind i MDT'et? | `IsMdtAuthed(src)` | Alt der repræsenterer MDT-arbejde — rapporter, registeropslag, flådetavlen |
-
-Tabletten beder om adgangskode *ud over* jobbet. En betjent kan sagtens være på
-vagt uden nogensinde at have åbnet terminalen.
-
-## Konventioner
-
-<AccordionGroup>
-  <Accordion title="Indlæsningsrækkefølge er ligegyldig" icon="layer-group">
-    Exports slås op når de kaldes, ikke når ressourcen indlæses. Du kan derfor
-    kalde API'et fra en hvilken som helst ressource uanset startrækkefølge.
-    Erklær alligevel `va_policemdt` i din `dependencies` — så siger serveren
-    fra, hvis tabletten mangler.
-  </Accordion>
-
-  <Accordion title="Der kastes ingen fejl" icon="triangle-exclamation">
-    Ugyldige argumenter giver `false`, `nil` eller `{ ok = false }` i stedet for
-    at rejse en fejl. Tjek returværdier — et mislykket kald er tavst.
-  </Accordion>
-
-  <Accordion title="Læsninger returnerer kopier" icon="copy">
-    `GetFleet`, `GetCalls` og de øvrige læse-exports bygger friske tabeller ved
-    hvert kald. Du kan ikke ændre MDT'ets egen tilstand ved at holde fast i et
-    resultat — og du skal ikke forvente at et gammelt resultat opdaterer sig selv.
-  </Accordion>
-
-  <Accordion title="Identifier eller source?" icon="fingerprint">
-    Exports der arbejder på en *spiller* tager `src` (serverens player id).
-    Exports der arbejder på en *person i registret* tager en **ESX identifier**,
-    så de også virker for betjente der er offline.
-
-    Har du kun en `src` og skal bruge en identifier:
-
-    ```lua
-    local officer = exports.va_policemdt:GetOfficer(src)
-    local sheet = exports.va_policemdt:GetTimesheet(officer.identifier)
-    ```
-  </Accordion>
-
-  <Accordion title="GetCalls rydder op når den læses" icon="broom">
-    Udkald udløber efter `Config.shotSpotter.callTtl` (standard 600 sekunder),
-    men oprydningen sker *ved læsning*. Et script der aldrig kalder `GetCalls`,
-    ser derfor ikke listen skrumpe af sig selv.
-  </Accordion>
-</AccordionGroup>
-
-## Ikke med i denne version
-
-<Warning>
-  **Ingen events.** Der er endnu intet at lytte på — hverken
-  `va_policemdt:officerLoggedIn` eller `fineIssued`. Skal du *reagere* på noget
-  frem for at spørge om det, må du polle indtil videre. Sig gerne til hvilke
-  events du har brug for.
-</Warning>
-
-- **Ingen skriveadgang til borgere, beviser, våben, straffelov eller økonomi.**
-  Den logik ligger inde i tablettens egne callbacks og har endnu ingen
-  genbrugelige serverfunktioner.
-- **Model-hashes oversættes ikke på serveren.** Køretøjsmodel til visningsnavn
-  er en klient-native, så server-exports returnerer det databasen indeholder.
 
 ## Alle exports
 
@@ -140,18 +27,23 @@ vagt uden nogensinde at have åbnet terminalen.
   <Card title="Identitet og rettigheder" icon="id-card" href="/api-reference/identity">
     `IsPolice` · `IsMdtAuthed` · `HasMdtPermission` · `GetMdtPermissions` · `GetOfficer`
   </Card>
+
   <Card title="Udkald" icon="tower-broadcast" href="/api-reference/dispatch">
     `GetCalls` · `CreateCall` · `CloseCall`
   </Card>
+
   <Card title="Flåde og GPS" icon="car" href="/api-reference/fleet">
     `GetFleet` · `SetVehicleStatus` · `TrackVehicle` · `UntrackVehicle` · `GetGpsUnits`
   </Card>
+
   <Card title="Personale" icon="users" href="/api-reference/personnel">
     `GetTimesheet` · `GetCertificates`
   </Card>
+
   <Card title="Rapporter og bøder" icon="file-lines" href="/api-reference/reports">
     `GetReport` · `IssueFine`
   </Card>
+
   <Card title="Klient" icon="tablet-screen-button" href="/api-reference/client">
     `OpenTablet` · `CloseTablet` · `ToggleTablet` · `IsTabletOpen`
   </Card>

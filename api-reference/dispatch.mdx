@@ -4,17 +4,13 @@ description: "Rejs, læs og luk opkald på kortet"
 ---
 
 <Info>
-  **Server-exports.** Kaldes fra `server_script`. Se
-  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+  **Server-exports.** Kaldes fra `server_script`. 
 </Info>
 
-Udkald er den mest oplagte integration: dit alarmscript, panikknap eller
-ANPG-station rejser et opkald, og det lander på kortet hos alle betjente på vagt.
+Udkald er den mest oplagte integration: dit alarmscript, panikknap eller ANPG-station rejser et opkald, og det lander på kortet hos alle betjente på vagt.
 
 <Note>
-  Opkald lever **kun i hukommelsen** — de er flygtig radiotrafik, ikke sagsdata.
-  De udløber efter `Config.shotSpotter.callTtl` (standard 600 sekunder) og
-  overlever ikke en genstart af ressourcen.
+  Opkald lever **kun i hukommelsen** — de er flygtig radiotrafik, ikke sagsdata. De udløber efter `Config.shotSpotter.callTtl` (standard 600 sekunder) og overlever ikke en genstart af ressourcen.
 </Note>
 
 ## CreateCall
@@ -29,9 +25,8 @@ Rejs et opkald på kortet.
   Stedbetegnelse som mennesker læser, fx `Vangelico, Portola Dr`.
 </ParamField>
 
-<ParamField path="priority" type="string" default="mellem">
-  `hoej`, `mellem` eller `lav`. Styrer farven på kortet og hvor kraftigt
-  betjentenes alarm slår ud.
+<ParamField path="priority" default="mellem" type="string">
+  `hoej`, `mellem` eller `lav`. Styrer farven på kortet og hvor kraftigt betjentenes alarm slår ud.
 </ParamField>
 
 <ParamField path="x" type="number" required>
@@ -49,23 +44,25 @@ Rejs et opkald på kortet.
     <ResponseField name="id" type="string">
       Fx `call-7`. Gem den — du skal bruge den til `CloseCall`.
     </ResponseField>
-    <ResponseField name="title" type="string" />
-    <ResponseField name="location" type="string" />
+
     <ResponseField name="priority" type="string">
       `hoej` · `mellem` · `lav`
     </ResponseField>
+
     <ResponseField name="time" type="string">
       Klokkeslæt som `14:12`.
     </ResponseField>
+
     <ResponseField name="createdAt" type="number">
       Unix-tidsstempel.
     </ResponseField>
+
     <ResponseField name="position" type="table">
       `{ x = number, y = number }`
     </ResponseField>
+
     <ResponseField name="assigned" type="table | nil">
-      Den automatisk tildelte patrulje: `{ id = string, plate = string }`.
-      `nil` når ingen vogn var ledig.
+      Den automatisk tildelte patrulje: `{ id = string, plate = string }`. `nil` når ingen vogn var ledig.
     </ResponseField>
   </Expandable>
 </ResponseField>
@@ -82,14 +79,10 @@ end
 
 ### Hvad der sker automatisk
 
-Opkaldet sendes til alle betjente der er logget ind, og forsøger at hive den
-næste ledige patruljevogn ind efter tur — så belastningen fordeles i stedet for
-altid at ramme den første vogn på tavlen. Bliver en vogn tildelt, får dens
-besætning dispatch-beskeden i radioen.
+Opkaldet sendes til alle betjente der er logget ind, og forsøger at hive den næste ledige patruljevogn ind efter tur — så belastningen fordeles i stedet for altid at ramme den første vogn på tavlen. Bliver en vogn tildelt, får dens besætning dispatch-beskeden i radioen.
 
 <Warning>
-  `assigned` er `nil`, når ingen vogn stod på status `patrulje`. Antag aldrig at
-  feltet findes.
+  `assigned` er `nil`, når ingen vogn stod på status `patrulje`. Antag aldrig at feltet findes.
 </Warning>
 
 ## GetCalls
@@ -107,8 +100,7 @@ end
 ```
 
 <Note>
-  Oprydningen af udløbne opkald sker **ved læsning**. Et script der aldrig
-  kalder `GetCalls`, ser ikke listen skrumpe af sig selv.
+  Oprydningen af udløbne opkald sker **ved læsning**. Et script der aldrig kalder `GetCalls`, ser ikke listen skrumpe af sig selv.
 </Note>
 
 ## CloseCall
@@ -130,9 +122,7 @@ end
 ```
 
 <Tip>
-  Luk dine egne opkald, når kilden er ovre — en butiksalarm der nulstiller sig
-  selv, bør også lukke sit opkald. Ellers optager det plads på kortet indtil
-  det udløber, og den tildelte vogn bliver hængende på udrykning.
+  Luk dine egne opkald, når kilden er ovre — en butiksalarm der nulstiller sig selv, bør også lukke sit opkald. Ellers optager det plads på kortet indtil det udløber, og den tildelte vogn bliver hængende på udrykning.
 </Tip>
 
 ## Et komplet eksempel

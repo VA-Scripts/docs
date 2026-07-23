@@ -4,12 +4,10 @@ description: "Læs flådetavlen, flyt vogne og spor køretøjer på kortet"
 ---
 
 <Info>
-  **Server-exports.** Kaldes fra `server_script`. Se
-  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+  **Server-exports.** Kaldes fra `server_script`. 
 </Info>
 
-Flådetavlen er betjentenes overblik over hvilke vogne der kører, hvem der sidder
-i dem, og hvad de laver. GPS-sporingen er den tilhørende live-position på kortet.
+Flådetavlen er betjentenes overblik over hvilke vogne der kører, hvem der sidder i dem, og hvad de laver. GPS-sporingen er den tilhørende live-position på kortet.
 
 ## Statusser
 
@@ -23,8 +21,7 @@ En vogn står altid på præcis én af fire:
 | `garage` | Ude af drift |
 
 <Warning>
-  Kun vogne på `patrulje` kommer i betragtning, når et opkald skal tildeles.
-  Efterlader du vogne på `udrykning`, tømmes puljen af udrykningsklare enheder.
+  Kun vogne på `patrulje` kommer i betragtning, når et opkald skal tildeles. Efterlader du vogne på `udrykning`, tømmes puljen af udrykningsklare enheder.
 </Warning>
 
 ## GetFleet
@@ -40,14 +37,15 @@ Hele flådetavlen.
         <ResponseField name="id" type="string">
           Fx `gps-AB12345`. Bruges til `SetVehicleStatus`.
         </ResponseField>
-        <ResponseField name="plate" type="string" />
-        <ResponseField name="model" type="string" />
+
         <ResponseField name="area" type="string">
           Områdebetegnelse, fx `GPS-sporet`.
         </ResponseField>
+
         <ResponseField name="status" type="string">
           `patrulje` · `udrykning` · `stationaer` · `garage`
         </ResponseField>
+
         <ResponseField name="occupants" type="table[]">
           Besætningen. Se betjentformen nedenfor.
         </ResponseField>
@@ -73,8 +71,7 @@ Betjentformen i `occupants` og `pool`:
 ```
 
 <Note>
-  Den første der sætter sig i en vogn bliver `foerer`, alle efterfølgende bliver
-  `passager`.
+  Den første der sætter sig i en vogn bliver `foerer`, alle efterfølgende bliver `passager`.
 </Note>
 
 ```lua server.lua
@@ -124,9 +121,7 @@ exports.va_policemdt:TrackVehicle('AB12345', 'Police Interceptor')
 ```
 
 <Note>
-  Betjente gør normalt det her selv med `/registergps` inde i vognen. Brug
-  exportet, når noget andet skal registrere vognen — fx et garagescript der
-  automatisk sporer alt der køres ud.
+  Betjente gør normalt det her selv med `/registergps` inde i vognen. Brug exportet, når noget andet skal registrere vognen — fx et garagescript der automatisk sporer alt der køres ud.
 </Note>
 
 ## UntrackVehicle
@@ -138,8 +133,7 @@ Fjern en sporet vogn igen.
 </ParamField>
 
 <Warning>
-  Kaldet **ignoreres**, så længe vognen stadig har besætning på tavlen. Tag
-  besætningen af først, ellers sker der ingenting — og du får ingen fejl.
+  Kaldet **ignoreres**, så længe vognen stadig har besætning på tavlen. Tag besætningen af først, ellers sker der ingenting — og du får ingen fejl.
 </Warning>
 
 ```lua server.lua
@@ -152,14 +146,12 @@ Live-positioner for alle sporede vogne.
 
 <ResponseField name="returns" type="table[]">
   <Expandable title="enhed">
-    <ResponseField name="plate" type="string" />
-    <ResponseField name="model" type="string" />
     <ResponseField name="position" type="table">
       `{ x = number, y = number }`
     </ResponseField>
+
     <ResponseField name="online" type="boolean">
-      `false` betyder at sporingen har mistet køretøjet — positionen er da den
-      sidst kendte.
+      `false` betyder at sporingen har mistet køretøjet — positionen er da den sidst kendte.
     </ResponseField>
   </Expandable>
 </ResponseField>

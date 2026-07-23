@@ -4,12 +4,10 @@ description: "Slå op hvem en spiller er, og hvad vedkommende må"
 ---
 
 <Info>
-  **Server-exports.** Kaldes fra `server_script`. Se
-  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+  **Server-exports.** Kaldes fra `server_script`. 
 </Info>
 
-Det er de her fem, du skal bruge til at gate din egen kode. Uden dem er alt
-andet i API'et åbent for enhver spiller, der kan udløse din event.
+Det er de her fem, du skal bruge til at gate din egen kode. Uden dem er alt andet i API'et åbent for enhver spiller, der kan udløse din event.
 
 ## IsPolice
 
@@ -19,16 +17,13 @@ Har spilleren det konfigurerede politijob?
   Spillerens server id.
 </ParamField>
 
-<ResponseField name="returns" type="boolean" />
-
 ```lua server.lua
 if exports.va_policemdt:IsPolice(src) then
     -- åbn våbenskabet
 end
 ```
 
-Brug den til ting **ude i spilverdenen**: en dør på stationen, et våbenskab, en
-patruljevogn. Til alt der repræsenterer MDT-arbejde, brug `IsMdtAuthed`.
+Brug den til ting **ude i spilverdenen**: en dør på stationen, et våbenskab, en patruljevogn. Til alt der repræsenterer MDT-arbejde, brug `IsMdtAuthed`.
 
 ## IsMdtAuthed
 
@@ -37,8 +32,6 @@ Har spilleren gennemført MDT-login i denne session?
 <ParamField path="src" type="number" required>
   Spillerens server id.
 </ParamField>
-
-<ResponseField name="returns" type="boolean" />
 
 ```lua server.lua
 RegisterNetEvent('mitscript:opretRapport', function(data)
@@ -49,8 +42,7 @@ end)
 ```
 
 <Note>
-  Tabletten beder om adgangskode ud over jobbet. En betjent på vagt, der aldrig
-  har åbnet terminalen, giver `true` fra `IsPolice` men `false` herfra.
+  Tabletten beder om adgangskode ud over jobbet. En betjent på vagt, der aldrig har åbnet terminalen, giver `true` fra `IsPolice` men `false` herfra.
 </Note>
 
 ## HasMdtPermission
@@ -64,8 +56,6 @@ Server-autoritativt tjek af én rettighed.
 <ParamField path="permissionId" type="string" required>
   Rettighedens id. Se listen nedenfor.
 </ParamField>
-
-<ResponseField name="returns" type="boolean" />
 
 ```lua server.lua
 RegisterCommand('udbetalloen', function(source)
@@ -94,9 +84,7 @@ end, false)
 | `adgangsstyring` | Rettighedsstyring og straffelov |
 
 <Note>
-  De effektive rettigheder er rangmatricen plus tildelinger fra særlige roller
-  plus personlige undtagelser — hvor en personlig fratagelse slår en
-  rolletildeling. Du behøver ikke regne på det; dette export giver svaret.
+  De effektive rettigheder er rangmatricen plus tildelinger fra særlige roller plus personlige undtagelser — hvor en personlig fratagelse slår en rolletildeling. Du behøver ikke regne på det; dette export giver svaret.
 </Note>
 
 ## GetMdtPermissions
@@ -132,21 +120,25 @@ Betjentkortet for en spiller.
 
   <Expandable title="felter">
     <ResponseField name="identifier" type="string">
-      ESX-identifier. Brug den til de exports der tager en identifier frem for
-      en `src`.
+      ESX-identifier. Brug den til de exports der tager en identifier frem for en `src`.
     </ResponseField>
+
     <ResponseField name="name" type="string">
       Betjentens navn, fx `M. Sørensen`.
     </ResponseField>
+
     <ResponseField name="initials" type="string">
       Op til tre tegn, fx `MS`.
     </ResponseField>
+
     <ResponseField name="rank" type="string">
       ESX `grade_label`, fx `Politiassistent`.
     </ResponseField>
+
     <ResponseField name="grade" type="number">
       ESX-graden som tal.
     </ResponseField>
+
     <ResponseField name="callsign" type="string">
       Kaldesignal, fx `Alpha-12`. Tom streng når intet er sat.
     </ResponseField>
@@ -161,11 +153,9 @@ print(('%s %s (%s)'):format(officer.rank, officer.name, officer.callsign))
 ```
 
 <Warning>
-  Tjek altid for `nil`. Spilleren kan være hoppet af serveren, eller være
-  fyret fra politiet, mellem at din event blev udløst og du kalder her.
+  Tjek altid for `nil`. Spilleren kan være hoppet af serveren, eller være fyret fra politiet, mellem at din event blev udløst og du kalder her.
 </Warning>
 
 <Note>
-  `GetOfficer` returnerer `grade`, mens tablettens interne NUI-payloads bruger
-  `rankIndex` om det samme tal. Byg mod formen her.
+  `GetOfficer` returnerer `grade`, mens tablettens interne NUI-payloads bruger `rankIndex` om det samme tal. Byg mod formen her.
 </Note>

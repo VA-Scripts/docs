@@ -4,12 +4,9 @@ description: "Vis og skjul terminalen fra din egen kode"
 ---
 
 <Warning>
-  **Client-exports er ikke autoritative.** De kører på spillerens egen maskine,
-  og en modificeret klient kan kalde dem alle. Intet her returnerer noget,
-  serveren ville stole på — det er ren lokal grænsefladetilstand.
+  **Client-exports er ikke autoritative.** De kører på spillerens egen maskine, og en modificeret klient kan kalde dem alle. Intet her returnerer noget, serveren ville stole på — det er ren lokal grænsefladetilstand.
 
-  Skal noget have betydning, skal afgørelsen ligge på serveren. Se
-  [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
+  Skal noget have betydning, skal afgørelsen ligge på serveren. Se [tillidsmodellen](/api-reference/introduction#tillidsmodellen).
 </Warning>
 
 <Info>
@@ -25,8 +22,7 @@ exports.va_policemdt:OpenTablet()
 ```
 
 <Note>
-  At åbne en allerede åben tablet gør ingenting. Gentagne kald kan derfor ikke
-  bringe NUI-fokus ud af sync.
+  At åbne en allerede åben tablet gør ingenting. Gentagne kald kan derfor ikke bringe NUI-fokus ud af sync.
 </Note>
 
 ## CloseTablet
@@ -53,8 +49,6 @@ local nowOpen = exports.va_policemdt:ToggleTablet()
 
 Er tabletten fremme lige nu?
 
-<ResponseField name="returns" type="boolean" />
-
 ```lua client.lua
 if exports.va_policemdt:IsTabletOpen() then
     -- undlad at vise din egen HUD ovenpå
@@ -62,8 +56,7 @@ end
 ```
 
 <Tip>
-  Nyttigt til at undgå at dine egne overlays tegner oven på terminalen, eller
-  til at pause noget mens betjenten arbejder i den.
+  Nyttigt til at undgå at dine egne overlays tegner oven på terminalen, eller til at pause noget mens betjenten arbejder i den.
 </Tip>
 
 ## Et komplet eksempel
@@ -88,6 +81,5 @@ exports.ox_target:addBoxZone({
 ```
 
 <Note>
-  Tabletten kræver stadig MDT-login, når den åbnes. Exportet viser terminalen —
-  det logger ingen ind, og det omgår ingen rettigheder.
+  Tabletten kræver stadig MDT-login, når den åbnes. Exportet viser terminalen — det logger ingen ind, og det omgår ingen rettigheder.
 </Note>
