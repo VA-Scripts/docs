@@ -1,22 +1,19 @@
 ---
-title: "Opskrifter"
-description: "Færdige integrationer du kan kopiere og tilpasse"
+title: "Eksempler på brugen af exports"
+description: "Nedenfor finder du en liste med brugen af nogle af de exports tabletten tilbyder"
 ---
 
-Hver opskrift er komplet og kørende. Kopiér den ind i din egen ressource og ret
-navne og koordinater til.
-
 <Note>
-  Alle eksempler forudsætter `va_policemdt` i din `fxmanifest.lua`:
+  Alle eksempler forudsætter at `va_policemdt` er i din `fxmanifest.lua`:
 
   ```lua fxmanifest.lua
   dependencies { 'es_extended', 'va_policemdt' }
   ```
 </Note>
 
-## Butiksalarm der rejser et opkald
+## Butiksalarm der sender et opkald
 
-En alarm der udløses, rejser et højprioritets-opkald og rydder op efter sig selv.
+En alarm der udløses, sender et højprioritets-opkald og rydder op efter sig selv.
 
 ```lua server.lua
 AddEventHandler('minealarmer:udloest', function(butik, coords)
@@ -41,8 +38,7 @@ end)
 ## Fartkamera med automatisk bøde
 
 ```lua server.lua
--- Automatiske systemer får deres egen identifier, så bødetilsynet kan skelne
--- maskine fra menneske.
+
 local ATK_IDENTIFIER = 'char1:atk-system'
 
 AddEventHandler('minatk:maalt', function(citizenIdentifier, speed, limit)
@@ -65,7 +61,7 @@ AddEventHandler('minatk:maalt', function(citizenIdentifier, speed, limit)
 end)
 ```
 
-## Computer i stationen
+## Åben af tablet via zone
 
 ```lua client.lua
 exports.ox_target:addBoxZone({
@@ -82,23 +78,6 @@ exports.ox_target:addBoxZone({
         },
     },
 })
-```
-
-## Rettighedsgated kommando
-
-Mønsteret du skal bruge, hver gang spillere kan udløse din kode.
-
-```lua server.lua
-RegisterCommand('udbetalloen', function(source)
-    -- Serveren afgør hvem spilleren er. Klienten spørges aldrig.
-    if not exports.va_policemdt:HasMdtPermission(source, 'oekonomi') then
-        return TriggerClientEvent('chat:addMessage', source, {
-            args = { 'MDT', 'Du har ikke adgang til dette.' },
-        })
-    end
-
-    -- …
-end, false)
 ```
 
 ## Vagtbonus efter timer
@@ -127,7 +106,7 @@ end, false)
 ## Automatisk GPS-registrering fra garagen
 
 ```lua server.lua
-AddEventHandler('mingarage:koeretoejUdleveret', function(src, plate, model)
+AddEventHandler('garageScript:koeretoejUdleveret', function(src, plate, model)
     if not exports.va_policemdt:IsPolice(src) then return end
 
     -- Vognen er nu på kortet og på flådetavlen, uden at betjenten
@@ -135,7 +114,7 @@ AddEventHandler('mingarage:koeretoejUdleveret', function(src, plate, model)
     exports.va_policemdt:TrackVehicle(plate, model)
 end)
 
-AddEventHandler('mingarage:koeretoejIndleveret', function(plate)
+AddEventHandler('garageScript:koeretoejIndleveret', function(plate)
     -- Ignoreres hvis der stadig sidder nogen i den — tag besætningen af først.
     exports.va_policemdt:UntrackVehicle(plate)
 end)
@@ -161,8 +140,7 @@ end, true)  -- true = kun konsol og admins
 
 ## Discord-status over aktive udkald
 
-Da API'et ikke har events, poller vi. Vælg intervallet efter hvor hurtigt du
-skal opdage ændringer — ikke lavere.
+Da API'et ikke har events, poller vi. Vælg intervallet efter hvor hurtigt du skal opdage ændringer - ikke lavere.
 
 ```lua server.lua
 CreateThread(function()
@@ -181,9 +159,3 @@ CreateThread(function()
     end
 end)
 ```
-
-<Warning>
-  Poll ikke i en stram løkke. Hvert `GetCalls` bygger friske tabeller og rydder
-  udløbne opkald op — brugbart, men ikke gratis. 30 sekunder er rigeligt til et
-  statusfelt.
-</Warning>
