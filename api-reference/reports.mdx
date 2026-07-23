@@ -4,7 +4,7 @@ description: "Hent en hel sagsakt, eller udsted en bøde på en betjents vegne"
 ---
 
 <Info>
-  **Server-exports.** Kaldes fra `server_script`. 
+  **Server-exports.** Kaldes fra `server_script`.
 </Info>
 
 ## GetReport
@@ -185,7 +185,3 @@ AddEventHandler('minatk:maalt', function(citizenIdentifier, speed, limit)
     end
 end)
 ```
-
-<Tip>
-  Automatiske systemer bør have deres **egen service-identifier** frem for at skrive bøder i en rigtig betjents navn. Så kan bødetilsynet skelne mellem maskine og menneske, og ingen betjent får en statistik der ikke er deres.
-</Tip>

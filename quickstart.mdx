@@ -3,8 +3,7 @@ title: "Kom i gang"
 description: "Kald dit første export fra din egen ressource"
 ---
 
-Denne guide tager dig fra ingenting til et fungerende kald mod Politi Tablet.
-Du bygger et lille script der rejser et udkald på kortet, når en kommando køres.
+Denne guide tager dig fra ingenting til et fungerende kald mod Politi Tablet. Du bygger et lille script der rejser et udkald på kortet, når en kommando køres.
 
 ## Forudsætninger
 
@@ -12,45 +11,39 @@ Du bygger et lille script der rejser et udkald på kortet, når en kommando kør
 - Din egen ressource at skrive i — eller opret en ny mappe i `resources/`
 
 <Note>
-  Du behøver ikke ændre noget i `va_policemdt` selv. API'et er exports, som
-  enhver anden ressource kan kalde.
+  Du behøver ikke ændre noget i `va_policemdt` selv. API'et er exports, som enhver anden ressource kan kalde.
 </Note>
 
 ## Byg det
 
 <Steps>
   <Step title="Erklær afhængigheden">
-    Tilføj `va_policemdt` til din `fxmanifest.lua`. Det er ikke teknisk
-    påkrævet — exports slås op når de kaldes, ikke når ressourcen indlæses —
-    men det får serveren til at advare dig, hvis tabletten mangler.
+    Tilføj `va_policemdt` til din `fxmanifest.lua`. Det er ikke teknisk påkrævet — exports slås op når de kaldes, ikke når ressourcen indlæses — men det får serveren til at advare dig, hvis tabletten mangler.
 
     ```lua fxmanifest.lua
     fx_version 'cerulean'
     game 'gta5'
-
+    
     dependencies {
         'es_extended',
         'va_policemdt',
     }
-
+    
     server_script 'server.lua'
     ```
   </Step>
-
   <Step title="Skriv serverkoden">
-    Alle data-exports ligger på serversiden. Her registrerer vi en kommando,
-    som enhver spiller kan køre — så det første vi gør, er at kontrollere hvem
-    de er.
+    Alle data-exports ligger på serversiden. Her registrerer vi en kommando, som enhver spiller kan køre — så det første vi gør, er at kontrollere hvem de er.
 
     ```lua server.lua
     RegisterCommand('testkald', function(source)
         local src = source
-
+    
         -- Stol aldrig på klienten. Serveren afgør hvem spilleren er.
         if not exports.va_policemdt:IsMdtAuthed(src) then
             return print(('%s er ikke logget ind i MDT\'et'):format(src))
         end
-
+    
         local call = exports.va_policemdt:CreateCall(
             'Testkald',        -- titel
             'Legion Square',   -- sted
@@ -58,9 +51,9 @@ Du bygger et lille script der rejser et udkald på kortet, når en kommando kør
             195.0,             -- x
             -933.0             -- y
         )
-
+    
         print(('Oprettede %s'):format(call.id))
-
+    
         if call.assigned then
             print(('Patrulje %s rykker ud'):format(call.assigned.plate))
         end
@@ -68,37 +61,31 @@ Du bygger et lille script der rejser et udkald på kortet, når en kommando kør
     ```
 
     <Warning>
-      `local src = source` i første linje er ikke pynt. `source` er en global,
-      der bliver overskrevet så snart en anden event-handler kører — læser du
-      den senere i funktionen, kan du ramme en helt anden spiller.
+      `local src = source` i første linje er ikke pynt. `source` er en global, der bliver overskrevet så snart en anden event-handler kører — læser du den senere i funktionen, kan du ramme en helt anden spiller.
     </Warning>
   </Step>
-
   <Step title="Prøv det">
-    Start din ressource og kør `/testkald` i spillet som en betjent, der er
-    logget ind i tabletten.
+    Start din ressource og kør `/testkald` i spillet som en betjent, der er logget ind i tabletten.
 
-    ```
+    ```text
     ensure min_ressource
     ```
 
-    Opkaldet dukker op på kortet hos alle betjente på vagt. Er en patruljevogn
-    ledig, bliver den tildelt og får dispatch-beskeden i radioen.
+    Opkaldet dukker op på kortet hos alle betjente på vagt. Er en patruljevogn ledig, bliver den tildelt og får dispatch-beskeden i radioen.
   </Step>
 </Steps>
 
 ## Hvad så nu
 
 <CardGroup cols={2}>
-  <Card title="Forstå tillidsmodellen" icon="shield-check" href="/api-reference/introduction">
-    Hvorfor server-exports er betroede, og client-exports aldrig er.
-  </Card>
   <Card title="Se alle exports" icon="code" href="/api-reference/identity">
     21 exports fordelt på identitet, udkald, flåde, personale og rapporter.
   </Card>
+
   <Card title="Flere eksempler" icon="book-open" href="/guides/recipes">
     Butiksalarm, fartkamera med automatisk bøde, computer i stationen.
   </Card>
+
   <Card title="Åbn tabletten fra din kode" icon="tablet-screen-button" href="/api-reference/client">
     Client-exports til at vise og skjule terminalen.
   </Card>
